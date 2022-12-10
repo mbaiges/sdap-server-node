@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {                        
+    "target": "es6", 
+    "module": "commonjs", 
+    "outDir": "./dist", 
+    "rootDir": "./src", 
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true, 
+    "allowJs": true,
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "baseUrl": "./src",
+    "paths": {
+        "@app/*": [
+            "*"
+        ]
+    },
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
+  },
+  "include": ["src/**/*"],
+  "exclude":[
+    "dist",
+    "node_modules"
+  ]
+}
