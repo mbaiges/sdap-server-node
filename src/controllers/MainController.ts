@@ -82,8 +82,6 @@ export default class MainController {
         const value  = msg.value;
         
         // Service
-        console.log(schema);
-        console.log(value);
         const created: Aggregable = this.aggregableService.create(schema, value);
         console.log(created);
 
@@ -159,6 +157,7 @@ export default class MainController {
 
         // Response
         const resp: UpdateResponseMessage = {
+            id:   id,
             type: MessageType.Update,
             results: []
         };

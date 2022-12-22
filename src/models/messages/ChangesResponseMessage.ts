@@ -1,8 +1,8 @@
 import Message from "./Message";
 
-import { ChangeResult } from "../../models/aggregables/changes";
+import { ProcessedChange } from "../aggregables/changes";
 
 export default interface UpdateResponseMessage extends Message {
     id:      string;
-    results: ChangeResult[];
+    changes: ProcessedChange[];
 }

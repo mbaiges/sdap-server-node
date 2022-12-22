@@ -3,7 +3,7 @@ import { JSONSchema7 } from "json-schema";
 import * as JsonPointerUtils from "json-pointer";
 
 import { Aggregable } from "../models/aggregables";
-import { Change, ChangeResult } from "../models/aggregables/changes";
+import { Change, ChangeOps, ChangeResult } from "../models/aggregables/changes";
 import { ChangeOperation, ChangeOperationType, SetChangeOperation } from "../models/aggregables/changes/operations";
 import { ConsoleLogger } from "../utils";
 import { AggregableInMemoryRepository } from "../repositories";
@@ -91,8 +91,9 @@ export default class AggregableService {
         const updateResults: ChangeResult[] = []; 
 
         for (const update of updates) {
-            for (const ptr in update) {
-                const op: ChangeOperation = update[ptr];
+            const ops: ChangeOps = update.ops;
+            for (const ptr in ops) {
+                const op: ChangeOperation = ops[ptr];
 
                 switch (op.type) {
                     case ChangeOperationType.Set:

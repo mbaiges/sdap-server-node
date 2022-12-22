@@ -1,5 +1,5 @@
-import { ChangeOperation } from "./operations";
+import ChangeOps from "./ChangeOps";
 
 export default interface Change { 
-    [key: string]: ChangeOperation; 
+    ops: ChangeOps
 }
