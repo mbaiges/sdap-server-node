@@ -1,7 +1,7 @@
 import { Service } from "typedi";
 import { JSONSchema7 } from "json-schema";
 
-import { Aggregable } from "../models/aggregables";
+import { FullAggregable } from "../models/aggregables";
 import { ConsoleLogger } from "../utils";
 
 @Service()
@@ -33,15 +33,18 @@ export default class AggregableInMemoryRepository {
      * @param value 
      * @returns 
      */
-    insert(schema: JSONSchema7, value: any): Aggregable {
-        let ret: Aggregable;
+    insert(schema: JSONSchema7, value: any): FullAggregable {
+        let ret: FullAggregable;
 
         // Create model
         const id: string = this.#nextId();
-        const created: Aggregable = {
+        const created: FullAggregable = {
             id,
             schema,
-            value
+            value,
+            initialValue: value,
+            changes: [],
+            subscribed: new Set<string>()
         };
 
         // Save model
@@ -58,8 +61,8 @@ export default class AggregableInMemoryRepository {
      * @param id 
      * @returns 
      */
-    findById(id: string): Aggregable | undefined {
-        let ret: Aggregable | undefined;
+    findById(id: string): FullAggregable | undefined {
+        let ret: FullAggregable | undefined;
 
         ret = this.map[id];
 
@@ -77,8 +80,8 @@ export default class AggregableInMemoryRepository {
      * @param newAggregable
      * @returns 
      */
-    replaceById(id: string, newAggregable: Aggregable): Aggregable {
-        const oldAggregable: Aggregable | undefined = this.findById(id);
+    replaceById(id: string, newAggregable: FullAggregable): FullAggregable {
+        const oldAggregable: FullAggregable | undefined = this.findById(id);
 
         if (!oldAggregable) {
             // Not found --> Error

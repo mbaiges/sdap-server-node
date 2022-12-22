@@ -2,7 +2,7 @@ import { Service } from "typedi";
 import { JSONSchema7 } from "json-schema";
 import * as JsonPointerUtils from "json-pointer";
 
-import { Aggregable } from "../models/aggregables";
+import { Aggregable, FullAggregable } from "../models/aggregables";
 import { Change, ChangeOps, ChangeResult } from "../models/aggregables/changes";
 import { ChangeOperation, ChangeOperationType, SetChangeOperation } from "../models/aggregables/changes/operations";
 import { ConsoleLogger } from "../utils";
@@ -80,7 +80,7 @@ export default class AggregableService {
      */
     update(id: string, updates: Change[]): ChangeResult[] {
         // Repository
-        const agg: Aggregable | undefined = this.aggregableRepository.findById(id);
+        const agg: FullAggregable | undefined = this.aggregableRepository.findById(id);
 
         if (!agg) {
             // TODO: No Aggregable found
