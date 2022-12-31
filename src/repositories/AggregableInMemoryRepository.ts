@@ -54,7 +54,8 @@ export default class AggregableInMemoryRepository {
             initialValue: value,
             changes: [],
             subscribed: new Set<string>(),
-            createdBy
+            createdBy,
+            createdAt: Date.now()
         };
 
         // Save model
@@ -150,7 +151,7 @@ export default class AggregableInMemoryRepository {
         let processed: ProcessedChange = {
             ...change,
             changeId: this.#nextChangeId(),
-            changeTime: Date.now(),
+            changeAt: Date.now(),
             changeBy
         }
         if (!agg.changes) {
@@ -171,7 +172,7 @@ export default class AggregableInMemoryRepository {
      * @param change
      * @returns 
      */
-    changesSince(id: string, changeId?: string, changeTime?: number): ProcessedChange[] {
+    changesSince(id: string, changeId?: string, changeAt?: number): ProcessedChange[] {
         const agg: FullAggregable | undefined = this.findById(id);
 
         if (!agg) {
@@ -188,10 +189,10 @@ export default class AggregableInMemoryRepository {
             console.log(change);
             if (
                 append // We asume the changes are saved in order
-                || (!changeId && !changeTime)
-                || (!!changeId && !!changeTime && changeId === change.changeId && changeTime < change.changeTime)
-                || (!!changeId && !changeTime && changeId === change.changeId)
-                || (!changeId && !!changeTime && changeTime < change.changeTime)
+                || (!changeId && !changeAt)
+                || (!!changeId && !!changeAt && changeId === change.changeId && changeAt < change.changeAt)
+                || (!!changeId && !changeAt && changeId === change.changeId)
+                || (!changeId && !!changeAt && changeAt < change.changeAt)
             ) {
                 append = true; // Ordered changes
 

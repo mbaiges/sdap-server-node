@@ -43,7 +43,8 @@ export default class UserInMemoryRepository {
         const created: User = {
             id,
             username,
-            ws
+            ws,
+            createdAt: Date.now()
         };
 
         // Save model

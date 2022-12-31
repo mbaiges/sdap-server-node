@@ -3,7 +3,8 @@ import { JSONSchema7 } from "json-schema";
 import * as JsonPointerUtils from "json-pointer";
 
 import { User } from "../models/users";
-import { Aggregable, FullAggregable } from "../models/aggregables";
+import { Error } from "../models/errors";
+import { FullAggregable } from "../models/aggregables";
 import { Change, ChangeOps, ChangeResult, ProcessedChange } from "../models/aggregables/changes";
 import { ChangeOperation, ChangeOperationType, SetChangeOperation } from "../models/aggregables/changes/operations";
 import { ConsoleLogger } from "../utils";
@@ -116,20 +117,25 @@ export default class AggregableService {
                         break;
                 }
 
-                let result: any; // TODO: define proper type
+                let result: ChangeResult; // TODO: define proper type
                 if (knownOp) {
                     const processed: ProcessedChange = this.aggregableRepository.addChangeToId(id, update, user.id);
                     processedChanges.push(processed);
                     result = {
-                        success:    true,
-                        changeId:   processed.changeId,
-                        changeTime: processed.changeTime
+                        success:  true,
+                        changeId: processed.changeId,
+                        changeAt: processed.changeAt
                     }
                 } else {
                     // In case unknown op - Add corresponding result
                     result = {
                         success: false,
-                        error:   "unknownOp"
+                        errors:  [
+                            {
+                                code: "unknownOp",
+                                msg:  "Unknown Operation"
+                            }
+                        ]
                     }
                 }
 

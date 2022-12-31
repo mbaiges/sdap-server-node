@@ -1,4 +1,3 @@
-import * as WebSocket from "ws";
 import { Service } from "typedi";
 
 import { User } from "../models/users";

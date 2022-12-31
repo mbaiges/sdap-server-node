@@ -22,7 +22,6 @@ import {
 } from "../models/messages";
 import { User } from "../models/users";
 import { Aggregable, FullAggregable } from "../models/aggregables";
-import { ChangeResult } from "../models/aggregables/changes"
 import { UserService, AggregableService, SubscriptionService } from "../services"
 import { ConsoleLogger } from "../utils";
 
@@ -176,8 +175,8 @@ export default class MainController {
 
         if (!!agg.changes && agg.changes.length > 0) {
             const lastChange = agg.changes[agg.changes.length-1];
-            resp.lastChangeId   = lastChange.changeId;
-            resp.lastChangeTime = lastChange.changeTime;
+            resp.lastChangeId = lastChange.changeId;
+            resp.lastChangeAt = lastChange.changeAt;
         }
 
         user.ws.send(JSON.stringify(resp));
@@ -217,8 +216,8 @@ export default class MainController {
 
         // Response
         const resp: UpdateResponseMessage = {
-            type: MessageType.Update,
-            id:   id,
+            type:    MessageType.Update,
+            id:      id,
             results: updateResults
         };
         user.ws.send(JSON.stringify(resp));
@@ -231,7 +230,7 @@ export default class MainController {
      * Subscribe
      */
     #handleSubscribeRequest(user: User, msg: SubscribeRequestMessage) {
-        const { id, lastChangeId, lastChangeTime, compactPeriodically } = msg;
+        const { id, lastChangeId, lastChangeAt, compactPeriodically } = msg;
         
         // Service
         const res: boolean = this.subscriptionService.subscribe(user, id);
@@ -249,8 +248,8 @@ export default class MainController {
         user.ws.send(JSON.stringify(resp));
 
         if (res) {
-            console.log("Now notifying since " + lastChangeId + " and " + lastChangeTime);
-            this.subscriptionService.notifyChangesSince([user], id, lastChangeId, lastChangeTime);
+            console.log("Now notifying since " + lastChangeId + " and " + lastChangeAt);
+            this.subscriptionService.notifyChangesSince([user], id, lastChangeId, lastChangeAt);
         }
     }
 
