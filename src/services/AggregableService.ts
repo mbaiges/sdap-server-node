@@ -30,9 +30,9 @@ export default class AggregableService {
      * @param value 
      * @returns 
      */
-    create(user: User, schema: JSONSchema7, value: any): Aggregable {
+    create(user: User, schema: JSONSchema7, value: any): FullAggregable {
         // Repository
-        const created: Aggregable = this.aggregableRepository.insert(user.id, schema, value);
+        const created: FullAggregable = this.aggregableRepository.insert(user.id, schema, value);
 
         return created;
     }
@@ -44,12 +44,13 @@ export default class AggregableService {
     /** 
      * Retrieves the value of the given id
      * 
+     * @param user
      * @param id 
      * @returns 
      */
-    getById(user: User, id: string): Aggregable | undefined {
+    findById(user: User, id: string): FullAggregable | undefined {
         // Repository
-        const agg: Aggregable | undefined = this.aggregableRepository.findById(id);
+        const agg: FullAggregable | undefined = this.aggregableRepository.findById(id);
 
         return agg;
     }
@@ -67,7 +68,7 @@ export default class AggregableService {
      */
     schema(user: User, id: string): JSONSchema7 | undefined {
         // Repository
-        const agg: Aggregable | undefined = this.aggregableRepository.findById(id);
+        const agg: FullAggregable | undefined = this.aggregableRepository.findById(id);
 
         return agg? agg.schema : undefined;
     }

@@ -21,7 +21,7 @@ import {
     UnsubscribeResponseMessage
 } from "../models/messages";
 import { User } from "../models/users";
-import { Aggregable } from "../models/aggregables";
+import { Aggregable, FullAggregable } from "../models/aggregables";
 import { ChangeResult } from "../models/aggregables/changes"
 import { UserService, AggregableService, SubscriptionService } from "../services"
 import { ConsoleLogger } from "../utils";
@@ -123,9 +123,9 @@ export default class MainController {
 
         // Response
         const resp: HelloResponseMessage = {
-            type: MessageType.Hello,
+            type:     MessageType.Hello,
             username: username,
-            success: !!created
+            success:  !!created
         };
         if (created) {
             resp.newUsername = created.username;
@@ -147,7 +147,8 @@ export default class MainController {
 
         // Response
         const resp: CreateResponseMessage = {
-            type: MessageType.Create,
+            type:    MessageType.Create,
+            id:      created.id,
             created: created
         };
         user.ws.send(JSON.stringify(resp));
@@ -159,7 +160,7 @@ export default class MainController {
     #handleGetRequest(user: User, msg: GetRequestMessage) {
         // Service
         const { id } = msg;
-        const agg: Aggregable | undefined = this.aggregableService.getById(user, id);
+        const agg: FullAggregable | undefined = this.aggregableService.findById(user, id);
 
         if (!agg) {
             this.logger.log(`Aggregable with id '${id}' not found`);
@@ -168,9 +169,17 @@ export default class MainController {
 
         // Response
         const resp: GetResponseMessage = {
-            type: MessageType.Get,
+            type:  MessageType.Get,
+            id:    agg.id,
             value: agg.value
         };
+
+        if (!!agg.changes && agg.changes.length > 0) {
+            const lastChange = agg.changes[agg.changes.length-1];
+            resp.lastChangeId   = lastChange.changeId;
+            resp.lastChangeTime = lastChange.changeTime;
+        }
+
         user.ws.send(JSON.stringify(resp));
     }
     
