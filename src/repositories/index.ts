@@ -1,5 +1,9 @@
+import UserInMemoryRepository from "./UserInMemoryRepository";
 import AggregableInMemoryRepository from "./AggregableInMemoryRepository";
+import SubscriptionInMemoryRepository from "./SubscriptionInMemoryRepository";
 
 export {
-    AggregableInMemoryRepository
+    UserInMemoryRepository,
+    AggregableInMemoryRepository,
+    SubscriptionInMemoryRepository
 }

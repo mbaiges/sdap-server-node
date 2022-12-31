@@ -1,9 +1,12 @@
 enum MessageType {
-    Create  = "create",
-    Get     = "get",
-    Schema  = "schema",
-    Changes = "changes",
-    Update  = "update"
+    Hello       = "hello",
+    Create      = "create",
+    Get         = "get",
+    Schema      = "schema",
+    Update      = "update",
+    Subscribe   = "subscribe",
+    Unsubscribe = "unsubscribe",
+    Changes     = "changes",
 }
 
 export default MessageType;

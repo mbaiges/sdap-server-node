@@ -3,17 +3,20 @@ import { JSONSchema7 } from "json-schema";
 
 import { FullAggregable } from "../models/aggregables";
 import { ConsoleLogger } from "../utils";
+import { Change, ProcessedChange } from "../models/aggregables/changes";
 
 @Service()
 export default class AggregableInMemoryRepository {
     counter: number;
-    map: any = {};
+    changeCounter: number;
+    map: Map<string, FullAggregable> = new Map();
     
     constructor(
         readonly logger: ConsoleLogger
     ) {
         this.counter = 0;
-        this.map = {};
+        this.changeCounter = 0;
+        this.map = new Map();
     }
 
     // Helpers
@@ -21,6 +24,12 @@ export default class AggregableInMemoryRepository {
     #nextId(): string {
         const nextId: string = `${this.counter}`;
         this.counter += 1;
+        return nextId;
+    }
+
+    #nextChangeId(): string {
+        const nextId: string = `${this.changeCounter}`;
+        this.changeCounter += 1;
         return nextId;
     }
 
@@ -33,7 +42,7 @@ export default class AggregableInMemoryRepository {
      * @param value 
      * @returns 
      */
-    insert(schema: JSONSchema7, value: any): FullAggregable {
+    insert(createdBy: string, schema: JSONSchema7, value: any): FullAggregable {
         let ret: FullAggregable;
 
         // Create model
@@ -44,15 +53,16 @@ export default class AggregableInMemoryRepository {
             value,
             initialValue: value,
             changes: [],
-            subscribed: new Set<string>()
+            subscribed: new Set<string>(),
+            createdBy
         };
 
         // Save model
-        this.map[id] = created;
+        this.map.set(id, created);
 
         ret = created; // If no error
 
-        return ret;
+        return Object.assign({}, ret);
     }
 
     /**
@@ -64,13 +74,13 @@ export default class AggregableInMemoryRepository {
     findById(id: string): FullAggregable | undefined {
         let ret: FullAggregable | undefined;
 
-        ret = this.map[id];
+        ret = this.map.get(id);
 
         if (!ret) {
             ret = undefined;
         }
 
-        return ret;
+        return Object.assign({}, ret);
     }
 
     /**
@@ -90,11 +100,113 @@ export default class AggregableInMemoryRepository {
             throw new Error();
         }
 
-        this.map[id] = newAggregable;
+        this.map.set(id, newAggregable);
 
-        return newAggregable;
+        return Object.assign({}, newAggregable);
     }
 
+    /**
+     * Replaces an aggregable based on its id
+     * 
+     * @param id
+     * @param newAggregable
+     * @returns 
+     */
+    replaceValueById(id: string, value: any): FullAggregable {
+        const oldAggregable: FullAggregable | undefined = this.findById(id);
+
+        if (!oldAggregable) {
+            // Not found --> Error
+            // TODO: error
+            this.logger.error(`Aggregable with id '${id}' not found`);
+            throw new Error();
+        }
+
+        oldAggregable.value = value;
+
+        this.map.set(id, oldAggregable);
+
+        return Object.assign({}, oldAggregable);
+    }
+
+    /**
+     * Add change to an aggregable based on its id
+     * 
+     * @param id
+     * @param change
+     * @param changeBy
+     * @returns 
+     */
+    addChangeToId(id: string, change: Change, changeBy: string): ProcessedChange {
+        const agg: FullAggregable | undefined = this.findById(id);
+
+        if (!agg) {
+            // Not found --> Error
+            // TODO: error
+            this.logger.error(`Aggregable with id '${id}' not found`);
+            throw new Error();
+        }
+
+        let processed: ProcessedChange = {
+            ...change,
+            changeId: this.#nextChangeId(),
+            changeTime: Date.now(),
+            changeBy
+        }
+        if (!agg.changes) {
+            agg.changes = [];
+        }
+        agg.changes.push(processed);
+
+        return processed;
+    }
+
+    /**
+     * Add change to an aggregable based on its id
+     * 
+     * If changeId is given, it must be valid,
+     * or 0 results will be found
+     * 
+     * @param id
+     * @param change
+     * @returns 
+     */
+    changesSince(id: string, changeId?: string, changeTime?: number): ProcessedChange[] {
+        const agg: FullAggregable | undefined = this.findById(id);
+
+        if (!agg) {
+            // Not found --> Error
+            // TODO: error
+            this.logger.error(`Aggregable with id '${id}' not found`);
+            throw new Error();
+        }
+
+        const changes: ProcessedChange[] = [];
+        let append: boolean = false;
+        for (let change of agg.changes) {
+            console.log("Changes since for change:");
+            console.log(change);
+            if (
+                append // We asume the changes are saved in order
+                || (!changeId && !changeTime)
+                || (!!changeId && !!changeTime && changeId === change.changeId && changeTime < change.changeTime)
+                || (!!changeId && !changeTime && changeId === change.changeId)
+                || (!changeId && !!changeTime && changeTime < change.changeTime)
+            ) {
+                append = true; // Ordered changes
+
+                if (!!changeId && changeId === change.changeId) { // Then we add next one
+                    continue;
+                }
+
+                console.log("adding change");
+                changes.push(change);
+            }
+        }
+
+        return changes;
+    }
+    
 
     /**
      * Removes an aggregable based on its id
@@ -102,7 +214,7 @@ export default class AggregableInMemoryRepository {
      * @param id 
      */
     removeById(id: string): boolean {
-        delete this.map[id];
+        this.map.delete(id);
 
         return true; // Always works
     }

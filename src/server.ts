@@ -22,8 +22,14 @@ const wss = new WebSocket.Server({ server });
 const Controller = Container.get(MainController);
 
 wss.on('connection', (ws: WebSocket) => {
+    Controller.init(ws);
+
     ws.on('message', (message: string) => {
         Controller.processMessage(ws, message);
+    });
+
+    ws.on('close', () => {
+        Controller.close(ws);
     });
 });
 
