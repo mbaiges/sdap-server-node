@@ -31,9 +31,9 @@ export default class AggregableService {
      * @param value 
      * @returns 
      */
-    create(user: User, schema: JSONSchema7, value: any): FullAggregable {
+    create(name: string | undefined, user: User, schema: JSONSchema7, value: any): FullAggregable {
         // Repository
-        const created: FullAggregable = this.aggregableRepository.insert(user.id, schema, value);
+        const created: FullAggregable = this.aggregableRepository.insert(name, user.id, schema, value);
 
         return created;
     }
@@ -43,15 +43,15 @@ export default class AggregableService {
     /////////////
 
     /** 
-     * Retrieves the value of the given id
+     * Retrieves the value of the given name
      * 
      * @param user
-     * @param id 
+     * @param name 
      * @returns 
      */
-    findById(user: User, id: string): FullAggregable | undefined {
+    findByName(user: User, name: string): FullAggregable | undefined {
         // Repository
-        const agg: FullAggregable | undefined = this.aggregableRepository.findById(id);
+        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(name);
 
         return agg;
     }
@@ -61,15 +61,15 @@ export default class AggregableService {
     ////////////////
 
     /** 
-     * Retrieves the schema of the given id
+     * Retrieves the schema of the given name
      * 
      * @param user
-     * @param id 
+     * @param name 
      * @returns 
      */
-    schema(user: User, id: string): JSONSchema7 | undefined {
+    schema(user: User, name: string): JSONSchema7 | undefined {
         // Repository
-        const agg: FullAggregable | undefined = this.aggregableRepository.findById(id);
+        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(name);
 
         return agg? agg.schema : undefined;
     }
@@ -82,17 +82,17 @@ export default class AggregableService {
      * Updates the object with defined changes. 
      * 
      * @param user
-     * @param id
+     * @param name
      * @param updates
      * @returns 
      */
-    update(user: User, id: string, updates: Change[]): any[] {
+    update(user: User, name: string, updates: Change[]): any[] {
         // Repository
-        const agg: FullAggregable | undefined = this.aggregableRepository.findById(id);
+        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(name);
 
         if (!agg) {
             // TODO: No Aggregable found
-            throw new Error(`No Aggregable found with id '${id}'`);
+            throw new Error(`Aggregable with name '${name}' not found`);
         }
 
         // Apply changes
@@ -119,7 +119,7 @@ export default class AggregableService {
 
                 let result: ChangeResult; // TODO: define proper type
                 if (knownOp) {
-                    const processed: ProcessedChange = this.aggregableRepository.addChangeToId(id, update, user.id);
+                    const processed: ProcessedChange = this.aggregableRepository.addChangeById(agg.id, update, user.id);
                     processedChanges.push(processed);
                     result = {
                         success:  true,
@@ -145,7 +145,7 @@ export default class AggregableService {
             }
         }
 
-        this.aggregableRepository.replaceById(id, agg);
+        this.aggregableRepository.replaceById(agg.id, agg);
 
         return [updateResults, processedChanges];
     }

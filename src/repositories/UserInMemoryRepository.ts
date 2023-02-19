@@ -1,12 +1,14 @@
 import * as WebSocket from "ws";
 import { Service } from "typedi";
+import crypto from "crypto";
 
 import { User } from "../models/users";
 import { ConsoleLogger } from "../utils";
 
+const GEN_ID_LENGTH = 16;
+
 @Service()
 export default class UserInMemoryRepository {
-    counter:       number;
     mapByWs:       Map<WebSocket, User> = new Map();
     mapById:       Map<string, User> = new Map();
     mapByUsername: Map<string, User> = new Map();
@@ -14,7 +16,6 @@ export default class UserInMemoryRepository {
     constructor(
         readonly logger: ConsoleLogger
     ) {
-        this.counter = 0;
         this.mapByWs = new Map();
         this.mapById = new Map();
     }
@@ -22,9 +23,7 @@ export default class UserInMemoryRepository {
     // Helpers
 
     #nextId(): string {
-        const nextId: string = `${this.counter}`;
-        this.counter += 1;
-        return nextId;
+        return crypto.randomBytes(GEN_ID_LENGTH).toString("hex");
     }
 
     // Interfaces

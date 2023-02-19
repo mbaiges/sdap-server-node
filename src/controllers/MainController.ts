@@ -40,8 +40,8 @@ export default class MainController {
 
     processMessage(ws: WebSocket, message: string) : void {
         try {
-            this.logger.log(`received: ${message}`);
             const user : User | undefined = this.userService.findByWs(ws);
+            this.logger.log(`\\${user?.username}\\ - Received: ${message}`);
             const msg : Message = this.#parseMessage(message);
             this.#handleMessage(ws, user, msg);
         } catch(error) {
@@ -54,7 +54,7 @@ export default class MainController {
         try {
             const user : User | undefined = this.userService.findByWs(ws);
             this.userService.delete(ws);
-            this.logger.log(`USER ${user?.id} - disconnected`);
+            this.logger.log(`\\${user?.username}\\ - Disconnected`);
         } catch(error) {
             this.logger.error("There's been an error");
             console.log(error);
@@ -104,7 +104,7 @@ export default class MainController {
                 this.#handleUnsubscribeRequest(user, msg as UnsubscribeRequestMessage);
                 break;
             default:
-                this.logger.log(`Message of type ${msg.type} unrecognized`);
+                this.logger.log(`\\${user?.username}\\ - Message of type ${msg.type} unrecognized`);
                 // TODO: return error
         }
     }
@@ -137,18 +137,23 @@ export default class MainController {
      * Create
      */
      #handleCreateRequest(user: User, msg: CreateRequestMessage) {
+        const name   = msg.name;
         const schema = msg.schema;
         const value  = msg.value;
         
         // Service
-        const created: Aggregable = this.aggregableService.create(user, schema, value);
+        const created: Aggregable = this.aggregableService.create(name, user, schema, value);
         console.log(created);
 
         // Response
         const resp: CreateResponseMessage = {
             type:    MessageType.Create,
-            id:      created.id,
-            created: created
+            name:    created.name,
+            created: {
+                name:   created.name,
+                schema: created.schema,
+                value:  created.value
+            }
         };
         user.ws.send(JSON.stringify(resp));
     }
@@ -158,18 +163,18 @@ export default class MainController {
      */
     #handleGetRequest(user: User, msg: GetRequestMessage) {
         // Service
-        const { id } = msg;
-        const agg: FullAggregable | undefined = this.aggregableService.findById(user, id);
+        const { name } = msg;
+        const agg: FullAggregable | undefined = this.aggregableService.findByName(user, name);
 
         if (!agg) {
-            this.logger.log(`Aggregable with id '${id}' not found`);
+            this.logger.log(`\\${user?.username}\\ - Aggregable with name '${name}' not found`);
             return;
         }
 
         // Response
         const resp: GetResponseMessage = {
             type:  MessageType.Get,
-            id:    agg.id,
+            name:  agg.name,
             value: agg.value
         };
 
@@ -186,20 +191,20 @@ export default class MainController {
      * Schema
      */
     #handleSchemaRequest(user: User, msg: SchemaRequestMessage) {
-        const { id } = msg;
+        const { name } = msg;
         
         // Service
-        const schema: JSONSchema7 | undefined = this.aggregableService.schema(user, id);
+        const schema: JSONSchema7 | undefined = this.aggregableService.schema(user, name);
 
         if (!schema) {
-            this.logger.log(`Aggregable with id '${id}' not found`);
+            this.logger.log(`\\${user?.username}\\ - Aggregable with name '${name}' not found`);
             return;
         }
 
         // Response
         const resp: SchemaResponseMessage = {
             type: MessageType.Schema,
-            id,
+            name,
             schema
         };
         user.ws.send(JSON.stringify(resp));
@@ -209,31 +214,31 @@ export default class MainController {
      * Update
      */
     #handleUpdateRequest(user: User, msg: UpdateRequestMessage) {
-        const { id, updates } = msg;
+        const { name, updates } = msg;
         
         // Service
-        const [updateResults, changes] = this.aggregableService.update(user, id, updates);
+        const [updateResults, changes] = this.aggregableService.update(user, name, updates);
 
         // Response
         const resp: UpdateResponseMessage = {
             type:    MessageType.Update,
-            id:      id,
+            name:    name,
             results: updateResults
         };
         user.ws.send(JSON.stringify(resp));
 
         // Notify changes
-        this.subscriptionService.notifyChanges(id, changes);
+        this.subscriptionService.notifyChanges(name, changes);
     }
     
     /**
      * Subscribe
      */
     #handleSubscribeRequest(user: User, msg: SubscribeRequestMessage) {
-        const { id, lastChangeId, lastChangeAt, compactPeriodically } = msg;
+        const { name, lastChangeId, lastChangeAt, compactPeriodically } = msg;
         
         // Service
-        const res: boolean = this.subscriptionService.subscribe(user, id);
+        const res: boolean = this.subscriptionService.subscribe(user, name);
 
         if (!res) {
             // TODO: Handle this case
@@ -242,14 +247,14 @@ export default class MainController {
         // Response
         const resp: SubscribeResponseMessage = {
             type:    MessageType.Subscribe,
-            id:      id,
+            name:    name,
             success: res
         };
         user.ws.send(JSON.stringify(resp));
 
         if (res) {
-            console.log("Now notifying since " + lastChangeId + " and " + lastChangeAt);
-            this.subscriptionService.notifyChangesSince([user], id, lastChangeId, lastChangeAt);
+            // console.log("Now notifying since " + lastChangeId + " and " + lastChangeAt);
+            this.subscriptionService.notifyChangesSince([user], name, lastChangeId, lastChangeAt);
         }
     }
 
@@ -257,13 +262,13 @@ export default class MainController {
      * Unsubscribe
      */
     #handleUnsubscribeRequest(user: User, msg: UnsubscribeRequestMessage) {
-        const { id } = msg;
+        const { name } = msg;
 
         let res: boolean = true
         
         // Service
         try {
-            this.subscriptionService.unsubscribe(user, id);
+            this.subscriptionService.unsubscribe(user, name);
         } catch (error) {
             // Always returns success
             // No matter if the aggregable was not found
@@ -272,7 +277,7 @@ export default class MainController {
         // Response
         const resp: UnsubscribeResponseMessage = {
             type:    MessageType.Unsubscribe,
-            id:      id,
+            name:    name,
             success: true
         };
         user.ws.send(JSON.stringify(resp));

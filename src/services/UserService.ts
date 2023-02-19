@@ -1,5 +1,6 @@
 import * as WebSocket from "ws";
 import { Service } from "typedi";
+import crypto from "crypto";
 
 import { User } from "../models/users";
 import { ConsoleLogger } from "../utils";
@@ -37,6 +38,11 @@ export default class UserService {
 
         const name: string = username + this.#nextAnnonymousId();
 
+        if (this.userRepository.findByUsername(name)) {
+            // throw new Error(); // Throw proper error
+            return undefined;
+        }
+
         // Repository
         const created: User = this.userRepository.insert(ws, name);
 
@@ -51,9 +57,22 @@ export default class UserService {
      */
     findById(id: string): User | undefined {
         // Repository
-        const agg: User | undefined = this.userRepository.findById(id);
+        const user: User | undefined = this.userRepository.findById(id);
 
-        return agg;
+        return user;
+    }
+
+    /** 
+     * Retrieves an user by username
+     * 
+     * @param username 
+     * @returns 
+     */
+    findByUsername(username: string): User | undefined {
+        // Repository
+        const user: User | undefined = this.userRepository.findByUsername(username);
+
+        return user;
     }
 
     /** 

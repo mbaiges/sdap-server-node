@@ -24,17 +24,17 @@ export default class SubscriptionService {
      * @param aggId
      * @returns 
      */
-    subscribe(user: User, aggId: string): boolean {
+    subscribe(user: User, aggName: string): boolean {
         let res: boolean = true;
 
-        const agg: FullAggregable | undefined = this.aggregableRepository.findById(aggId);
-        if (!user) {
+        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(aggName);
+        if (!agg) {
             // TODO: Throw corresponding error
-            throw new Error(`No aggregable with id ${aggId} found`);
+            throw new Error(`No aggregable with name ${aggName} found`);
         }
 
-        const sub: Subscription = this.subscriptionRepository.subscribe(user.id, aggId);
-        res = sub && sub.userId === user.id && sub.aggId === aggId;
+        const sub: Subscription = this.subscriptionRepository.subscribe(user.id, agg.id);
+        res = sub && sub.userId === user.id && sub.aggId === agg.id;
 
         return res;
     }
@@ -43,30 +43,30 @@ export default class SubscriptionService {
      * Unsubscribes an user to an aggregable
      * 
      * @param user
-     * @param aggId
+     * @param aggName
      * @returns 
      */
-    unsubscribe(user: User, aggId: string): boolean {
+    unsubscribe(user: User, aggName: string): boolean {
         let res: boolean = true;
 
-        const agg: FullAggregable | undefined = this.aggregableRepository.findById(aggId);
-        if (!user) {
+        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(aggName);
+        if (!agg) {
             // TODO: Throw corresponding error
-            throw new Error(`No aggregable with id ${aggId} found`);
+            throw new Error(`No aggregable with name ${aggName} found`);
         }
 
-        res = this.subscriptionRepository.unsubscribe(user.id, aggId);
+        res = this.subscriptionRepository.unsubscribe(user.id, agg.id);
 
         return res;
     }
 
     /**
-     * Notify given users about changes under aggregable with given id
+     * Notify given users about changes under aggregable with given name
      * 
      * @param aggId
      * @returns 
      */
-    notifyChangesToUsers(users: User[], aggId: string, changes: ProcessedChange[]): void {
+    notifyChangesToUsers(users: User[], aggName: string, changes: ProcessedChange[]): void {
         if (!users || users.length === 0) {
             // Nothing to notify
             return;
@@ -87,7 +87,7 @@ export default class SubscriptionService {
 
             const msg: ChangesNotificationMessage = {
                 type: MessageType.Changes,
-                id: aggId,
+                name: aggName,
                 changes: othersChanges
             }
 
@@ -96,43 +96,43 @@ export default class SubscriptionService {
     }
 
     /**
-     * Notify subscribed users about changes under aggregable with given id
+     * Notify subscribed users about changes under aggregable with given name
      * 
-     * @param aggId
+     * @param aggName
      * @returns 
      */
-    notifyChanges(aggId: string, changes: ProcessedChange[]): void {
+    notifyChanges(aggName: string, changes: ProcessedChange[]): void {
         if (changes.length === 0) {
             return;
         }
 
-        const agg: FullAggregable | undefined = this.aggregableRepository.findById(aggId);
+        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(aggName);
         if (!agg) {
             // No agg with that id found
             return;
         }
 
-        const users: User[] = this.subscriptionRepository.findAggregableSubscriptions(aggId);
+        const users: User[] = this.subscriptionRepository.findAggregableSubscriptions(agg.id);
 
-        this.notifyChangesToUsers(users, aggId, changes);
+        this.notifyChangesToUsers(users, aggName, changes);
     }
 
     /**
-     * Notify users about changes under aggregable with given id
+     * Notify users about changes under aggregable with given name
      * 
      * @param user
-     * @param aggId
+     * @param aggName
      * @returns 
      */
-    notifyChangesSince(users: User[], aggId: string, changeId?: string, changeTime?: number): void {
-        const agg: FullAggregable | undefined = this.aggregableRepository.findById(aggId);
+    notifyChangesSince(users: User[], aggName: string, changeId?: string, changeTime?: number): void {
+        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(aggName);
         if (!agg) {
             // No agg with that id found
             return;
         }
 
-        const changes: ProcessedChange[] = this.aggregableRepository.changesSince(aggId, changeId, changeTime);
-        this.notifyChangesToUsers(users, aggId, changes);
+        const changes: ProcessedChange[] = this.aggregableRepository.changesSinceById(agg.id, changeId, changeTime);
+        this.notifyChangesToUsers(users, aggName, changes);
     }
 
 }
