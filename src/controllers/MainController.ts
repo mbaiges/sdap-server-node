@@ -112,7 +112,7 @@ export default class MainController {
     // Handlers
 
     /**
-     * Create
+     * Hello
      */
     #handleHelloRequest(ws: WebSocket, msg: HelloRequestMessage) {
         const { username } = msg;
