@@ -21,7 +21,7 @@ export default class SubscriptionService {
      * Subscribes an user to an aggregable
      * 
      * @param user
-     * @param aggId
+     * @param aggName
      * @returns 
      */
     subscribe(user: User, aggName: string): boolean {
@@ -63,7 +63,7 @@ export default class SubscriptionService {
     /**
      * Notify given users about changes under aggregable with given name
      * 
-     * @param aggId
+     * @param aggName
      * @returns 
      */
     notifyChangesToUsers(users: User[], aggName: string, changes: ProcessedChange[]): void {

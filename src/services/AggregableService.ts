@@ -104,7 +104,7 @@ export default class AggregableService {
             for (const ptr in ops) {
                 const op: ChangeOperation = ops[ptr];
 
-               let node = Object.assign({}, agg.value);
+                let node = Object.assign({}, agg.value);
 
                 let knownOp: boolean = true;
                 switch (op.type) {
