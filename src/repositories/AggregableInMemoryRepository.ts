@@ -213,21 +213,24 @@ export default class AggregableInMemoryRepository {
 
         const changes: ProcessedChange[] = [];
         let append: boolean = false;
-        for (let change of agg.changes) {
-            if (
-                append // We asume the changes are saved in order
-                || (!changeId && !changeAt)
-                || (!!changeId && !!changeAt && changeId === change.changeId && changeAt < change.changeAt)
-                || (!!changeId && !changeAt && changeId === change.changeId)
-                || (!changeId && !!changeAt && changeAt < change.changeAt)
-            ) {
-                append = true; // Ordered changes
 
-                if (!!changeId && changeId === change.changeId) { // Then we add next one
-                    continue;
+        if (agg.changes) {
+            for (let change of agg.changes) {
+                if (
+                    append // We asume the changes are saved in order
+                    || (!changeId && !changeAt)
+                    || (!!changeId && !!changeAt && changeId === change.changeId && changeAt < change.changeAt)
+                    || (!!changeId && !changeAt && changeId === change.changeId)
+                    || (!changeId && !!changeAt && changeAt < change.changeAt)
+                ) {
+                    append = true; // Ordered changes
+    
+                    if (!!changeId && changeId === change.changeId) { // Then we add next one
+                        continue;
+                    }
+                    
+                    changes.push(change);
                 }
-                
-                changes.push(change);
             }
         }
 
