@@ -6,7 +6,14 @@ import { User } from "../models/users";
 import { Error } from "../models/errors";
 import { FullAggregable } from "../models/aggregables";
 import { Change, ChangeOps, ChangeResult, ProcessedChange } from "../models/aggregables/changes";
-import { ChangeOperation, ChangeOperationType, SetChangeOperation } from "../models/aggregables/changes/operations";
+import { 
+    ChangeOperation, 
+    ChangeOperationType, 
+    SetChangeOperation,
+    UnsetChangeOperation,
+    NumAddChangeOperation,
+    ArrAppendChangeOperation
+} from "../models/aggregables/changes/operations";
 import { ConsoleLogger } from "../utils";
 import { AggregableInMemoryRepository } from "../repositories";
 import SubscriptionService from "./SubscriptionService";
@@ -137,6 +144,8 @@ export default class AggregableService {
         for (const update of updates) {
             const ops: ChangeOps = update.ops;
             for (const ptr in ops) {
+                const parentPtr = JsonPointerUtils.compile(JsonPointerUtils.parse(ptr).slice(0, -1));
+
                 const op: ChangeOperation = ops[ptr];
 
                 let node = Object.assign({}, agg.value);
@@ -146,6 +155,21 @@ export default class AggregableService {
                     case ChangeOperationType.Set:
                         const setOp: SetChangeOperation = op as SetChangeOperation;
                         JsonPointerUtils.set(node, ptr, setOp.value);
+                        break;
+                    case ChangeOperationType.Unset:
+                        const unsetOp: UnsetChangeOperation = op as UnsetChangeOperation;
+                        JsonPointerUtils.set(node, ptr, undefined);
+                        break;
+                    case ChangeOperationType.NumAdd:
+                        const numAddOp: NumAddChangeOperation = op as NumAddChangeOperation;
+                        let numToAdd = JsonPointerUtils.get(node, ptr);
+                        JsonPointerUtils.set(node, ptr, numToAdd + numAddOp.value);
+                        break;
+                    case ChangeOperationType.ArrAppend:
+                        const arrAppendOp: ArrAppendChangeOperation = op as ArrAppendChangeOperation;
+                        let arrToAppendTo = JsonPointerUtils.get(node, ptr);
+                        arrToAppendTo.push(arrAppendOp.value);
+                        JsonPointerUtils.set(node, ptr, arrToAppendTo);
                         break;
                     default:
                         knownOp = false;

@@ -1,5 +1,8 @@
 enum ChangeOperationType {
-    Set = "set"
+    Set       = "set",
+    Unset     = "unset",
+    NumAdd    = "numAdd",
+    ArrAppend = "arrAppend"
 }
 
 export default ChangeOperationType;
