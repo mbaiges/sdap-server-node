@@ -13,6 +13,8 @@ import {
     GetResponseMessage,
     SchemaRequestMessage, 
     SchemaResponseMessage,
+    DeleteRequestMessage,
+    DeleteResponseMessage,
     UpdateRequestMessage,
     UpdateResponseMessage,
     SubscribeRequestMessage,
@@ -88,6 +90,9 @@ export default class MainController {
             case MessageType.Create:
                 this.#handleCreateRequest(user, msg as CreateRequestMessage);
                 break;
+            case MessageType.Delete:
+                this.#handleDeleteRequest(user, msg as DeleteRequestMessage);
+                break;
             case MessageType.Get:
                 this.#handleGetRequest(user, msg as GetRequestMessage);
                 break;
@@ -142,7 +147,7 @@ export default class MainController {
         const value  = msg.value;
         
         // Service
-        const created: Aggregable = this.aggregableService.create(name, user, schema, value);
+        const created: Aggregable = this.aggregableService.create(user, name, schema, value);
         console.log(created);
 
         // Response
@@ -154,6 +159,24 @@ export default class MainController {
                 schema: created.schema,
                 value:  created.value
             }
+        };
+        user.ws.send(JSON.stringify(resp));
+    }
+
+    /**
+     * Delete
+     */
+    #handleDeleteRequest(user: User, msg: DeleteRequestMessage) {
+        const name   = msg.name;
+        
+        // Service
+        const deleted: boolean = this.aggregableService.delete(user, name);
+
+        // Response
+        const resp: DeleteResponseMessage = {
+            type:    MessageType.Delete,
+            name:    name,
+            success: deleted
         };
         user.ws.send(JSON.stringify(resp));
     }

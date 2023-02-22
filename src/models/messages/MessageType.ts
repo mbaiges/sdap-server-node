@@ -1,6 +1,7 @@
 enum MessageType {
     Hello       = "hello",
     Create      = "create",
+    Delete      = "delete",
     Get         = "get",
     Schema      = "schema",
     Update      = "update",

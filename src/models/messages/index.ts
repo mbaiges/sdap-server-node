@@ -4,6 +4,8 @@ import HelloRequestMessage from "./HelloRequestMessage";
 import HelloResponseMessage from "./HelloResponseMessage";
 import CreateRequestMessage from "./CreateRequestMessage";
 import CreateResponseMessage from "./CreateResponseMessage";
+import DeleteRequestMessage from "./DeleteRequestMessage";
+import DeleteResponseMessage from "./DeleteResponseMessage";
 import GetRequestMessage from "./GetRequestMessage";
 import GetResponseMessage from "./GetResponseMessage";
 import SchemaRequestMessage from "./SchemaRequestMessage";
@@ -23,6 +25,8 @@ export {
     HelloResponseMessage,
     CreateRequestMessage,
     CreateResponseMessage,
+    DeleteRequestMessage,
+    DeleteResponseMessage,
     GetRequestMessage,
     GetResponseMessage,
     SchemaRequestMessage,

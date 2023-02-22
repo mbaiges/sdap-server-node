@@ -108,7 +108,7 @@ export default class AggregableInMemoryRepository {
             ret = undefined;
         }
 
-        return Object.assign({}, ret);
+        return ret;
     }
 
     /**

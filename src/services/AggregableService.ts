@@ -27,15 +27,50 @@ export default class AggregableService {
      * Creates an aggregable object with a defined schema
      * 
      * @param user
+     * @param name
      * @param schema 
      * @param value 
      * @returns 
      */
-    create(name: string | undefined, user: User, schema: JSONSchema7, value: any): FullAggregable {
+    create(user: User, name: string | undefined, schema: JSONSchema7, value: any): FullAggregable {
         // Repository
         const created: FullAggregable = this.aggregableRepository.insert(name, user.id, schema, value);
 
         return created;
+    }
+
+    ////////////////
+    //   Delete   //
+    ////////////////
+
+    /**
+     * Deletes an aggregable object with a defined schema
+     * 
+     * @param user
+     * @param name
+     * @returns 
+     */
+    delete(user: User, name: string): boolean {
+        // Repository
+        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(name);
+
+        let ret = true;
+
+        if (agg) {
+            console.log(agg);
+            if (agg.createdBy == user.id) {
+                // Repository
+                ret = this.aggregableRepository.removeById(agg.id);
+            } else {
+                // TODO: Insufficient permissions (not the owner)
+                throw new Error(`Aggregable with name '${name}' not owned by requesting user`);
+            }
+        } else {
+            // No Aggregable found
+            // throw new Error(`Aggregable with name '${name}' not found`);
+        }
+
+        return ret;
     }
 
     /////////////
