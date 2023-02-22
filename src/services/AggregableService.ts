@@ -143,12 +143,12 @@ export default class AggregableService {
 
         for (const update of updates) {
             const ops: ChangeOps = update.ops;
+
+            let node = agg.value; // It's always a copy
+
+            let errors: any = []
             for (const ptr in ops) {
-                const parentPtr = JsonPointerUtils.compile(JsonPointerUtils.parse(ptr).slice(0, -1));
-
                 const op: ChangeOperation = ops[ptr];
-
-                let node = Object.assign({}, agg.value);
 
                 let knownOp: boolean = true;
                 switch (op.type) {
@@ -175,36 +175,37 @@ export default class AggregableService {
                         knownOp = false;
                         break;
                 }
-
-                let result: ChangeResult; // TODO: define proper type
-                if (knownOp) {
-                    const processed: ProcessedChange = this.aggregableRepository.addChangeById(agg.id, update, user.id);
-                    processedChanges.push(processed);
-                    result = {
-                        success:  true,
-                        changeId: processed.changeId,
-                        changeAt: processed.changeAt
-                    }
-                } else {
-                    // In case unknown op - Add corresponding result
-                    result = {
-                        success: false,
-                        errors:  [
-                            {
-                                code: "unknownOp",
-                                msg:  "Unknown Operation"
-                            }
-                        ]
-                    }
+                
+                if (!knownOp) {
+                    errors.push({
+                        code: "unknownOp",
+                        msg:  `Unknown operation '${op.type}' at pointer '${ptr}'`
+                    })
                 }
-
-                // If everything went right
-                // Save change
-                updateResults.push(result);
             }
-        }
 
-        this.aggregableRepository.replaceById(agg.id, agg);
+            let result: ChangeResult; // TODO: define proper type
+            if (!errors || errors.length == 0) {
+                // If everything went right
+                // Save change with all its operations
+                this.aggregableRepository.replaceValueById(agg.id, node);
+
+                const processed: ProcessedChange = this.aggregableRepository.addChangeById(agg.id, update, user.id);
+                processedChanges.push(processed);
+                result = {
+                    success:  true,
+                    changeId: processed.changeId,
+                    changeAt: processed.changeAt
+                }
+            } else {
+                result = {
+                    success: false,
+                    errors:  errors
+                }
+            }
+
+            updateResults.push(result);
+        }
 
         return [updateResults, processedChanges];
     }

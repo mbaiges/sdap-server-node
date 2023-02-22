@@ -72,7 +72,7 @@ export default class AggregableInMemoryRepository {
 
         ret = created; // If no error
 
-        return Object.assign({}, ret);
+        return JSON.parse(JSON.stringify(ret));
     }
 
     /**
@@ -90,7 +90,7 @@ export default class AggregableInMemoryRepository {
             ret = undefined;
         }
 
-        return Object.assign({}, ret);
+        return JSON.parse(JSON.stringify(ret));
     }
 
     /**
@@ -108,7 +108,7 @@ export default class AggregableInMemoryRepository {
             ret = undefined;
         }
 
-        return ret;
+        return JSON.parse(JSON.stringify(ret));
     }
 
     /**
@@ -131,7 +131,7 @@ export default class AggregableInMemoryRepository {
         this.map.set(id, newAggregable);
         this.mapByName.set(oldAggregable.name, newAggregable);
 
-        return Object.assign({}, newAggregable);
+        return JSON.parse(JSON.stringify(newAggregable));
     }
 
     /**
@@ -156,7 +156,7 @@ export default class AggregableInMemoryRepository {
         this.map.set(id, oldAggregable);
         this.mapByName.set(oldAggregable.name, oldAggregable);
 
-        return Object.assign({}, oldAggregable);
+        return JSON.parse(JSON.stringify(oldAggregable));
     }
 
     /**
