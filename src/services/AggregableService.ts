@@ -154,22 +154,40 @@ export default class AggregableService {
                 switch (op.type) {
                     case ChangeOperationType.Set:
                         const setOp: SetChangeOperation = op as SetChangeOperation;
-                        JsonPointerUtils.set(node, ptr, setOp.value);
+                        if ("/" === ptr) { // TODO: If ends with "/", replace the value
+                            node = setOp.value;
+                        } else {
+                            JsonPointerUtils.set(node, ptr, setOp.value);
+                        }
                         break;
                     case ChangeOperationType.Unset:
                         const unsetOp: UnsetChangeOperation = op as UnsetChangeOperation;
-                        JsonPointerUtils.set(node, ptr, undefined);
+                        if ("/" === ptr) { // TODO: If ends with "/", replace the value
+                            node = undefined;
+                        } else {
+                            JsonPointerUtils.set(node, ptr, undefined);
+                        }
                         break;
                     case ChangeOperationType.NumAdd:
                         const numAddOp: NumAddChangeOperation = op as NumAddChangeOperation;
                         let numToAdd = JsonPointerUtils.get(node, ptr);
-                        JsonPointerUtils.set(node, ptr, numToAdd + numAddOp.value);
+                        if ("/" === ptr) { // TODO: If ends with "/", replace the value
+                            node = numToAdd + numAddOp.value;
+                        } else {
+                            JsonPointerUtils.set(node, ptr, numToAdd + numAddOp.value);
+                        }
                         break;
                     case ChangeOperationType.ArrAppend:
                         const arrAppendOp: ArrAppendChangeOperation = op as ArrAppendChangeOperation;
-                        let arrToAppendTo = JsonPointerUtils.get(node, ptr);
-                        arrToAppendTo.push(arrAppendOp.value);
-                        JsonPointerUtils.set(node, ptr, arrToAppendTo);
+                        let arrToAppendTo;
+                        if ("/" === ptr) { // TODO: If ends with "/", replace the value
+                            arrToAppendTo = node;
+                            arrToAppendTo.push(arrAppendOp.value);
+                        } else {
+                            arrToAppendTo = JsonPointerUtils.get(node, ptr);
+                            arrToAppendTo.push(arrAppendOp.value);
+                            JsonPointerUtils.set(node, ptr, arrToAppendTo);
+                        }
                         break;
                     default:
                         knownOp = false;
