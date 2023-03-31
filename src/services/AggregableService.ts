@@ -41,7 +41,7 @@ export default class AggregableService {
      */
     create(user: User, name: string | undefined, schema: JSONSchema7, value: any): FullAggregable {
         // Repository
-        const created: FullAggregable = this.aggregableRepository.insert(name, user.id, schema, value);
+        const created: FullAggregable = this.aggregableRepository.insert(name, user.username, schema, value);
 
         return created;
     }
@@ -65,7 +65,7 @@ export default class AggregableService {
 
         if (agg) {
             console.log(agg);
-            if (agg.createdBy == user.id) {
+            if (agg.createdBy == user.username) {
                 // Repository
                 ret = this.aggregableRepository.removeById(agg.id);
             } else {
@@ -208,7 +208,7 @@ export default class AggregableService {
                 // Save change with all its operations
                 this.aggregableRepository.replaceValueById(agg.id, node);
 
-                const processed: ProcessedChange = this.aggregableRepository.addChangeById(agg.id, update, user.id);
+                const processed: ProcessedChange = this.aggregableRepository.addChangeById(agg.id, update, user.username);
                 processedChanges.push(processed);
                 result = {
                     success:  true,

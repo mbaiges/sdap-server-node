@@ -76,7 +76,7 @@ export default class SubscriptionService {
             // Filter own changes
             const othersChanges = [];
             for (let change of changes) {
-                if (user.id !== change.changeBy) {
+                if (user.username !== change.changeBy) {
                     othersChanges.push(change);
                 }
             }
