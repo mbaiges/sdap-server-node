@@ -90,7 +90,9 @@ export default class AggregableInMemoryRepository {
             ret = undefined;
         }
 
-        return JSON.parse(JSON.stringify(ret));
+        return ret 
+        ? JSON.parse(JSON.stringify(ret))
+        : undefined;
     }
 
     /**
@@ -108,7 +110,9 @@ export default class AggregableInMemoryRepository {
             ret = undefined;
         }
 
-        return JSON.parse(JSON.stringify(ret));
+        return ret 
+        ? JSON.parse(JSON.stringify(ret))
+        : undefined;
     }
 
     /**
