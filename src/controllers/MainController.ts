@@ -25,12 +25,14 @@ import {
 import { User } from "../models/users";
 import { Aggregable, FullAggregable } from "../models/aggregables";
 import { UserService, AggregableService, SubscriptionService } from "../services"
-import { ConsoleLogger } from "../utils";
+import { StatusCode } from "../models/status";
+import { ConsoleLogger, ResponseStatusBuilder } from "../utils";
 
 @Service()
 export default class MainController {
     constructor(
         readonly logger: ConsoleLogger,
+        readonly respStatusBuilder: ResponseStatusBuilder,
         readonly userService: UserService,
         readonly aggregableService: AggregableService,
         readonly subscriptionService: SubscriptionService
@@ -128,8 +130,10 @@ export default class MainController {
         // Response
         const resp: HelloResponseMessage = {
             type:     MessageType.Hello,
-            username: username,
-            success:  !!created
+            status:   !!created 
+                ? StatusCode.OK.code 
+                : StatusCode.BAD_REQUEST.code,
+            username: username
         };
         if (created) {
             resp.newUsername = created.username;
@@ -142,24 +146,28 @@ export default class MainController {
      * Create
      */
      #handleCreateRequest(user: User, msg: CreateRequestMessage) {
-        const name   = msg.name;
-        const schema = msg.schema;
-        const value  = msg.value;
-        
-        // Service
-        const created: Aggregable = this.aggregableService.create(user, name, schema, value);
-        console.log(created);
+        const { name, schema, value } = msg;
 
-        // Response
-        const resp: CreateResponseMessage = {
+        let resp: CreateResponseMessage = {
             type:    MessageType.Create,
-            name:    created.name,
-            created: {
+        };
+        
+        try {
+            // Service
+            const created: Aggregable = this.aggregableService.create(user, name, schema, value);
+            console.log(created);
+            // Response
+            resp.status = StatusCode.CREATED.code;
+            resp.name = created.name;
+            resp.created = {
                 name:   created.name,
                 schema: created.schema,
                 value:  created.value
-            }
-        };
+            };
+        } catch (error: any) {
+            this.respStatusBuilder.processErrors(resp, error);
+        }
+
         user.ws.send(JSON.stringify(resp));
     }
 
@@ -167,17 +175,22 @@ export default class MainController {
      * Delete
      */
     #handleDeleteRequest(user: User, msg: DeleteRequestMessage) {
-        const name   = msg.name;
-        
-        // Service
-        const deleted: boolean = this.aggregableService.delete(user, name);
+        const { name } = msg;
 
-        // Response
-        const resp: DeleteResponseMessage = {
-            type:    MessageType.Delete,
-            name:    name,
-            success: deleted
+        let resp: DeleteResponseMessage = {
+            type: MessageType.Delete,
+            name: name
         };
+        
+        try {
+            // Service
+            const deleted: boolean = this.aggregableService.delete(user, name);
+            // Response
+            resp.status = StatusCode.OK.code;
+        } catch (error: any) {
+            this.respStatusBuilder.processErrors(resp, error);
+        }
+
         user.ws.send(JSON.stringify(resp));
     }
 
@@ -185,26 +198,27 @@ export default class MainController {
      * Get
      */
     #handleGetRequest(user: User, msg: GetRequestMessage) {
-        // Service
         const { name } = msg;
-        const agg: FullAggregable | undefined = this.aggregableService.findByName(user, name);
 
-        if (!agg) {
-            this.logger.log(`\\${user?.username}\\ - Aggregable with name '${name}' not found`);
-            return;
-        }
-
-        // Response
-        const resp: GetResponseMessage = {
-            type:  MessageType.Get,
-            name:  agg.name,
-            value: agg.value
+        let resp: GetResponseMessage = {
+            type: MessageType.Get,
+            name: name
         };
+        
+        try {
+            // Service
+            const agg: FullAggregable = this.aggregableService.findByName(user, name);
 
-        if (!!agg.changes && agg.changes.length > 0) {
-            const lastChange = agg.changes[agg.changes.length-1];
-            resp.lastChangeId = lastChange.changeId;
-            resp.lastChangeAt = lastChange.changeAt;
+            // Response
+            resp.status = StatusCode.OK.code;
+            resp.value = agg.value;
+            if (!!agg.changes && agg.changes.length > 0) {
+                const lastChange = agg.changes[agg.changes.length-1];
+                resp.lastChangeId = lastChange.changeId;
+                resp.lastChangeAt = lastChange.changeAt;
+            }
+        } catch (error: any) {
+            this.respStatusBuilder.processErrors(resp, error);
         }
 
         user.ws.send(JSON.stringify(resp));
@@ -216,20 +230,22 @@ export default class MainController {
     #handleSchemaRequest(user: User, msg: SchemaRequestMessage) {
         const { name } = msg;
         
-        // Service
-        const schema: JSONSchema7 | undefined = this.aggregableService.schema(user, name);
+        let resp: SchemaResponseMessage = {
+            type: MessageType.Schema,
+            name: name
+        };
+        
+        try {
+            // Service
+            const schema: JSONSchema7 = this.aggregableService.schema(user, name);
 
-        if (!schema) {
-            this.logger.log(`\\${user?.username}\\ - Aggregable with name '${name}' not found`);
-            return;
+            // Response
+            resp.status = StatusCode.OK.code;
+            resp.schema = schema;
+        } catch (error: any) {
+            this.respStatusBuilder.processErrors(resp, error);
         }
 
-        // Response
-        const resp: SchemaResponseMessage = {
-            type: MessageType.Schema,
-            name,
-            schema
-        };
         user.ws.send(JSON.stringify(resp));
     }
 
@@ -238,20 +254,31 @@ export default class MainController {
      */
     #handleUpdateRequest(user: User, msg: UpdateRequestMessage) {
         const { name, updates } = msg;
-        
-        // Service
-        const [updateResults, changes] = this.aggregableService.update(user, name, updates);
 
-        // Response
-        const resp: UpdateResponseMessage = {
-            type:    MessageType.Update,
-            name:    name,
-            results: updateResults
+        let resp: UpdateResponseMessage = {
+            type: MessageType.Update,
+            name: name
         };
-        user.ws.send(JSON.stringify(resp));
 
-        // Notify changes
-        this.subscriptionService.notifyChanges(name, changes);
+        try {
+            // Service
+            const [updateResults, changes] = this.aggregableService.update(user, name, updates);
+
+            // Response
+            resp.status = StatusCode.OK.code;
+            resp.results = updateResults;
+
+            user.ws.send(JSON.stringify(resp));
+
+            if (resp.status === StatusCode.OK.code) {
+                // Notify changes
+                this.subscriptionService.notifyChanges(name, changes);
+            }
+        } catch (error: any) {
+            this.respStatusBuilder.processErrors(resp, error);
+
+            user.ws.send(JSON.stringify(resp));
+        }
     }
     
     /**
@@ -259,25 +286,29 @@ export default class MainController {
      */
     #handleSubscribeRequest(user: User, msg: SubscribeRequestMessage) {
         const { name, lastChangeId, lastChangeAt, compactPeriodically } = msg;
-        
-        // Service
-        const res: boolean = this.subscriptionService.subscribe(user, name);
 
-        if (!res) {
-            // TODO: Handle this case
-        }
-
-        // Response
-        const resp: SubscribeResponseMessage = {
-            type:    MessageType.Subscribe,
-            name:    name,
-            success: res
+        let resp: SubscribeResponseMessage = {
+            type: MessageType.Subscribe,
+            name: name
         };
-        user.ws.send(JSON.stringify(resp));
+        
+        try {
+            // Service
+            const res: boolean = this.subscriptionService.subscribe(user, name);
 
-        if (res) {
-            // console.log("Now notifying since " + lastChangeId + " and " + lastChangeAt);
-            this.subscriptionService.notifyChangesSince([user], name, lastChangeId, lastChangeAt);
+            // Response
+            resp.status = StatusCode.OK.code;
+
+            user.ws.send(JSON.stringify(resp));
+
+            if (res) {
+                // console.log("Now notifying since " + lastChangeId + " and " + lastChangeAt);
+                this.subscriptionService.notifyChangesSince([user], name, lastChangeId, lastChangeAt);
+            }
+        } catch (error: any) {
+            this.respStatusBuilder.processErrors(resp, error);
+
+            user.ws.send(JSON.stringify(resp));
         }
     }
 
@@ -287,22 +318,21 @@ export default class MainController {
     #handleUnsubscribeRequest(user: User, msg: UnsubscribeRequestMessage) {
         const { name } = msg;
 
-        let res: boolean = true
+        let resp: UnsubscribeResponseMessage = {
+            type: MessageType.Unsubscribe,
+            name: name
+        };
         
-        // Service
         try {
+            // Service
             this.subscriptionService.unsubscribe(user, name);
-        } catch (error) {
-            // Always returns success
-            // No matter if the aggregable was not found
+
+            // Response
+            resp.status = StatusCode.OK.code;
+        } catch (error: any) {
+            this.respStatusBuilder.processErrors(resp, error);
         }
 
-        // Response
-        const resp: UnsubscribeResponseMessage = {
-            type:    MessageType.Unsubscribe,
-            name:    name,
-            success: true
-        };
         user.ws.send(JSON.stringify(resp));
     }
 }

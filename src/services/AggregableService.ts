@@ -3,7 +3,6 @@ import { JSONSchema7 } from "json-schema";
 import * as JsonPointerUtils from "json-pointer";
 
 import { User } from "../models/users";
-import { Error } from "../models/errors";
 import { FullAggregable } from "../models/aggregables";
 import { Change, ChangeOps, ChangeResult, ProcessedChange } from "../models/aggregables/changes";
 import { 
@@ -16,6 +15,7 @@ import {
 } from "../models/aggregables/changes/operations";
 import { ConsoleLogger } from "../utils";
 import { AggregableInMemoryRepository } from "../repositories";
+import { AggregableNameAlreadyExists } from "../repositories/errors";
 import SubscriptionService from "./SubscriptionService";
 
 @Service()
@@ -41,9 +41,16 @@ export default class AggregableService {
      */
     create(user: User, name: string | undefined, schema: JSONSchema7, value: any): FullAggregable {
         // Repository
-        const created: FullAggregable = this.aggregableRepository.insert(name, user.username, schema, value);
-
-        return created;
+        try {
+            const created: FullAggregable = this.aggregableRepository.insert(name, user.username, schema, value);
+            return created;
+        } catch (error) {
+            if (error instanceof AggregableNameAlreadyExists) {
+                throw error; // propagate this error
+            } else {
+                throw error;
+            }
+        }
     }
 
     ////////////////
@@ -91,11 +98,19 @@ export default class AggregableService {
      * @param name 
      * @returns 
      */
-    findByName(user: User, name: string): FullAggregable | undefined {
-        // Repository
-        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(name);
-
-        return agg;
+    findByName(user: User, name: string): FullAggregable {
+        try {
+            // Repository
+            const agg: FullAggregable = this.aggregableRepository.findByName(name);
+            console.log(agg);
+            return agg;
+        } catch (error) {
+            if (error instanceof AggregableNameAlreadyExists) {
+                throw error; // propagate this error
+            } else {
+                throw error;
+            }
+        }
     }
 
     ////////////////
@@ -109,11 +124,18 @@ export default class AggregableService {
      * @param name 
      * @returns 
      */
-    schema(user: User, name: string): JSONSchema7 | undefined {
-        // Repository
-        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(name);
-
-        return agg? agg.schema : undefined;
+    schema(user: User, name: string): JSONSchema7 {
+        try {
+            // Repository
+            const agg: FullAggregable = this.aggregableRepository.findByName(name);
+            return agg.schema;
+        } catch (error) {
+            if (error instanceof AggregableNameAlreadyExists) {
+                throw error; // propagate this error
+            } else {
+                throw error;
+            }
+        }
     }
 
     ////////////////
@@ -130,11 +152,11 @@ export default class AggregableService {
      */
     update(user: User, name: string, updates: Change[]): any[] {
         // Repository
-        const agg: FullAggregable | undefined = this.aggregableRepository.findByName(name);
-
-        if (!agg) {
-            // TODO: No Aggregable found
-            throw new Error(`Aggregable with name '${name}' not found`);
+        let agg: FullAggregable;
+        try {
+            agg = this.aggregableRepository.findByName(name);
+        } catch (error) {
+            throw error; // Propagate when error
         }
 
         // Apply changes

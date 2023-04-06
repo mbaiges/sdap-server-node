@@ -1,4 +1,4 @@
 export default interface Error {
-    code: string;
+    code: number;
     msg?: string;
 }

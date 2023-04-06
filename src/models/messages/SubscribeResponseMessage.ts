@@ -5,5 +5,4 @@ export default interface SubscribeResponseMessage extends Message {
     lastChangeId?:        string;
     lastChangeAt?:        number;
     compactPeriodically?: boolean;
-    success:              boolean;
 }

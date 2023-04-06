@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { FullAggregable } from "../models/aggregables";
 import { ConsoleLogger } from "../utils";
 import { Change, ProcessedChange } from "../models/aggregables/changes";
+import { AggregableNameAlreadyExists, AggregableNotFound } from "../repositories/errors";
 
 const GEN_ID_LENGTH        = 16;
 const GEN_CHANGE_ID_LENGTH = 16;
@@ -48,6 +49,10 @@ export default class AggregableInMemoryRepository {
     insert(name: string | undefined, createdBy: string, schema: JSONSchema7, value: any): FullAggregable {
         let ret: FullAggregable;
 
+        if (name && this.mapByName.has(name)) {
+            throw new AggregableNameAlreadyExists(`Aggregable name '${name}' already exists`);
+        }
+
         if (!name) {
             name = this.#nextName();
         }
@@ -81,18 +86,16 @@ export default class AggregableInMemoryRepository {
      * @param id 
      * @returns 
      */
-    findById(id: string): FullAggregable | undefined {
+    findById(id: string): FullAggregable {
         let ret: FullAggregable | undefined;
 
         ret = this.map.get(id);
 
         if (!ret) {
-            ret = undefined;
+            throw new AggregableNotFound(`Aggregable with id '${id}' not found`);
         }
 
-        return ret 
-        ? JSON.parse(JSON.stringify(ret))
-        : undefined;
+        return JSON.parse(JSON.stringify(ret));
     }
 
     /**
@@ -101,18 +104,16 @@ export default class AggregableInMemoryRepository {
      * @param name 
      * @returns 
      */
-    findByName(name: string): FullAggregable | undefined {
+    findByName(name: string): FullAggregable {
         let ret: FullAggregable | undefined;
 
         ret = this.mapByName.get(name);
 
         if (!ret) {
-            ret = undefined;
+            throw new AggregableNotFound(`Aggregable with name '${name}' not found`);
         }
 
-        return ret 
-        ? JSON.parse(JSON.stringify(ret))
-        : undefined;
+        return JSON.parse(JSON.stringify(ret));
     }
 
     /**
