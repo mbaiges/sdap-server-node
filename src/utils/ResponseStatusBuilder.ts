@@ -12,7 +12,8 @@ import {
     AggregableNotMatchSchemaAfterChange
 } from "../services/errors";
 import { 
-    UnauthorizedError 
+    UnauthorizedError, 
+    UnsupportedMessageTypeError 
 } from "../controllers/errors";
 import * as Errors from "../models/errors";
 import { StatusCode } from "../models/status";
@@ -67,6 +68,14 @@ export default class ResponseStatusBuilder {
         } else if (error instanceof UnauthorizedError) {
             resp.status = StatusCode.UNAUTHORIZED.code;
             appendErrors(resp, []);
+        } else if (error instanceof UnsupportedMessageTypeError) {
+            resp.status = StatusCode.BAD_REQUEST.code;
+            appendErrors(resp, [
+                {
+                    code: Errors.ErrorCode.UNSUPPORTED_OPERATION.code,
+                    msg:  error.message
+                }
+            ]);
         } else {
             resp.status = StatusCode.INTERNAL_SERVER_ERROR.code;
             appendErrors(resp, [

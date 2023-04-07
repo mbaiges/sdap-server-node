@@ -27,7 +27,10 @@ import { Aggregable, FullAggregable } from "../models/aggregables";
 import { UserService, AggregableService, SubscriptionService } from "../services"
 import { StatusCode } from "../models/status";
 import { ConsoleLogger, ResponseStatusBuilder } from "../utils";
-import { UnauthorizedError } from "../controllers/errors";
+import { 
+    UnauthorizedError,
+    UnsupportedMessageTypeError
+} from "../controllers/errors";
 import { AggregableNotMatchSchemaAfterChange } from "../services/errors";
 
 @Service()
@@ -117,7 +120,11 @@ export default class MainController {
                 break;
             default:
                 this.logger.log(`\\${user?.username}\\ - Message of type ${msg.type} unrecognized`);
-                // TODO: return error
+                const resp: Message = {
+                    type: msg.type
+                };
+                this.respStatusBuilder.processErrors(resp, new UnsupportedMessageTypeError(`Message type '${msg.type}' not supported`));
+                ws.send(JSON.stringify(resp));
         }
     }
     
