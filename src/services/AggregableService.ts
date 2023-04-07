@@ -111,7 +111,6 @@ export default class AggregableService {
         try {
             // Repository
             const agg: FullAggregable = this.aggregableRepository.findByName(name);
-            console.log(agg);
             return agg;
         } catch (error) {
             if (error instanceof AggregableNameAlreadyExists) {
