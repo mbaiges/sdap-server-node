@@ -1,7 +1,7 @@
-import { AggregableNameAlreadyExists } from "./AggregableNameAlreadyExists"
-import { AggregableNotFound } from "./AggregableNotFound"
+import { AggregableNameAlreadyExistsError } from "./AggregableNameAlreadyExistsError"
+import { AggregableNotFoundError } from "./AggregableNotFoundError"
 
 export {
-    AggregableNameAlreadyExists,
-    AggregableNotFound
+    AggregableNameAlreadyExistsError as AggregableNameAlreadyExists,
+    AggregableNotFoundError as AggregableNotFound
 }

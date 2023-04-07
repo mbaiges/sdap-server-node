@@ -1,6 +1,7 @@
 import { Service } from "typedi";
 import { JSONSchema7 } from "json-schema";
 import * as JsonPointerUtils from "json-pointer";
+import { Validator, Schema } from "jsonschema";
 
 import { User } from "../models/users";
 import { FullAggregable } from "../models/aggregables";
@@ -15,7 +16,9 @@ import {
 } from "../models/aggregables/changes/operations";
 import { ConsoleLogger } from "../utils";
 import { AggregableInMemoryRepository } from "../repositories";
+import { ErrorCode } from "../models/errors";
 import { AggregableNameAlreadyExists } from "../repositories/errors";
+import { AggregableNotMatchSchema } from "../services/errors";
 import SubscriptionService from "./SubscriptionService";
 
 @Service()
@@ -42,6 +45,12 @@ export default class AggregableService {
     create(user: User, name: string | undefined, schema: JSONSchema7, value: any): FullAggregable {
         // Repository
         try {
+            const v: Validator = new Validator();
+            const res = v.validate(value, schema as Schema);
+            if (!res.valid) {
+                throw new AggregableNotMatchSchema(res.toString());
+            }
+
             const created: FullAggregable = this.aggregableRepository.insert(name, user.username, schema, value);
             return created;
         } catch (error) {
@@ -163,12 +172,20 @@ export default class AggregableService {
         const processedChanges: ProcessedChange[] = [];
         const updateResults: ChangeResult[] = []; 
 
+        const v: Validator = new Validator(); // Validator
+        
+        let stillValidOps = true;
+
         for (const update of updates) {
+            if (!stillValidOps) {
+                break;
+            }
+
             const ops: ChangeOps = update.ops;
 
             let node = agg.value; // It's always a copy
 
-            let errors: any = []
+            let errors: any = [];
             for (const ptr in ops) {
                 const op: ChangeOperation = ops[ptr];
 
@@ -218,9 +235,21 @@ export default class AggregableService {
                 
                 if (!knownOp) {
                     errors.push({
-                        code: "unknownOp",
+                        code: ErrorCode.UNSUPPORTED_OPERATION.code,
                         msg:  `Unknown operation '${op.type}' at pointer '${ptr}'`
-                    })
+                    });
+                    stillValidOps = false;
+                    break; // finish processing the operations
+                }
+
+                const res = v.validate(node, agg.schema as Schema);
+                if (!res.valid) {
+                    errors.push({
+                        code: ErrorCode.UPDATE_INVALID.code,
+                        msg:  res.toString()
+                    });
+                    stillValidOps = false;
+                    break; // finish processing the operations
                 }
             }
 

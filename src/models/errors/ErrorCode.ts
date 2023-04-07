@@ -7,13 +7,13 @@ export default {
       code: 4002,
       msg: "Message type is not valid or supported"
     },
-    UPDATE_NON_EXISTING_FIELD: {
+    AGGREGABLE_INVALID: {
       code: 4003,
-      msg: "Try to modify a field that does not exist in the summary object"
+      msg: "The given schema does not validate the Aggregable value"
     },
-    UPDATE_INVALID_FIELD_TYPE: {
+    UPDATE_INVALID: {
       code: 4004,
-      msg: "Try to modify a field of a different type than the existing one in the summary object. The new value is not valid for the given schema or violates some constraint"
+      msg: "The new value after applying a change is not valid for the given schema or violates some constraint"
     },
     AGGREGABLE_NOT_FOUND: {
       code: 4005,

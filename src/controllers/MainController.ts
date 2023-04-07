@@ -27,6 +27,8 @@ import { Aggregable, FullAggregable } from "../models/aggregables";
 import { UserService, AggregableService, SubscriptionService } from "../services"
 import { StatusCode } from "../models/status";
 import { ConsoleLogger, ResponseStatusBuilder } from "../utils";
+import { UnauthorizedError } from "../controllers/errors";
+import { AggregableNotMatchSchemaAfterChange } from "../services/errors";
 
 @Service()
 export default class MainController {
@@ -82,8 +84,11 @@ export default class MainController {
             if (msg.type === MessageType.Hello) {
                 this.#handleHelloRequest(ws, msg as HelloRequestMessage);
             } else {
-                this.logger.error("Unauthenticated");
-                throw new Error("Unauthorized"); // TODO: Error handling
+                const resp: Message = {
+                    type: msg.type
+                };
+                this.respStatusBuilder.processErrors(resp, new UnauthorizedError("Unauthorized"))
+                ws.send(JSON.stringify(resp));
             }
             return;
         }
@@ -264,9 +269,25 @@ export default class MainController {
             // Service
             const [updateResults, changes] = this.aggregableService.update(user, name, updates);
 
+            // Check if there were any errors
+            let errored: boolean = false;
+            if (updateResults && updateResults.length > 0) {
+                for (const res of updateResults) {
+                    if (res.errors && res.errors.length > 0) {
+                        errored = true;
+                        break;
+                    }
+                };
+            }
+
             // Response
-            resp.status = StatusCode.OK.code;
             resp.results = updateResults;
+
+            if (errored) {
+                throw new AggregableNotMatchSchemaAfterChange("The update violates the schema of the aggregable.");
+            }
+
+            resp.status = StatusCode.OK.code;
 
             user.ws.send(JSON.stringify(resp));
 

@@ -10,6 +10,9 @@ export default {
     BAD_REQUEST: {
         code: 400
     },
+    UNAUTHORIZED: {
+        code: 401
+    },
     NOT_FOUND: {
         code: 404
     },
